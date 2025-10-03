@@ -1,0 +1,610 @@
+---
+title: "Mini-Project#01"
+Author: Wing Chan
+---
+# Press Release 1: Upcoming Season of Stranger Things 
+
+### Stranger Things Final Season to Take the World Upside Down One Last Time!
+![Stranger Things 5 (Source: Netflix)](images/strangerthings5.png.webp){fig-alt="Stranger Things 5 poster (source: Netflix" width=100% }
+
+Are you ready to flip the world upside down one last time? Netflix has officially confirmed that the fifth and final season of Stranger Things will premiere at the end of 2025. The previous four seasons have already captivated a huge crowd of global audiences, and made impacts to the pop culture. As fans eagerly await the epic conclusion, we look back at the extraordinary cultural and viewing impact of the series.
+
+## Record-Breaking Global Viewership
+
+* Across its first four seasons, Stranger Things has captivated audiences with 2.97 billion hours viewed globally.
+
+* This places the series as the #1 most-watched English-language TV show on Netflix, standing shoulder-to-shoulder with international hits like Squid Game (5.0B hours).
+
+* No other English-language TV series has reached this level of total viewership, proving the unparalleled cultural pull of Hawkins, Indiana.
+
+## Popularity Across Seasons
+
+* Each season of Stranger Things has earned a strong place in Netflix’s Global Top 10:
+
+  - Season 1 – 10 weeks (data tracked post-2022, highlighting continued appeal years after its 2017 release)
+
+  - Season 2 – 10 weeks
+
+  - Season 3 – 11 weeks
+
+  - Season 4 – 19 weeks
+
+* The series demonstrates not just one-time success but a sustained ability to re-enter the Top 10 and capture new audiences year after year.
+
+## Global Phenomenon
+
+* Stranger Things has appeared in the Top 10 charts of 93 out of 94 countries where Netflix operates.
+
+* From North America to Asia, Europe to Latin America, every season has resonated with fans, with weekly Top 10 appearances across 93 markets, ranging from multiple weeks in powerhouse countries to niche appearances in smaller markets.
+
+* This makes Stranger Things one of the most internationally beloved series in Netflix history.
+
+Stranger Things 5 is set to unleash an epic finale, reigniting passion for past seasons and pulling in old and new fans for one last heart-pounding adventure! Get ready for one last adventure.
+---
+
+# Press Release 2: Commercial Success in India
+### Bollywood to the World: Netflix’s Hindi-Language Hits Growth in India
+![India Movie on Netflix (Source: Netflix)](images/hindimovie.webp){fig-alt="India Movie on Netflix (Source: Netflix)" width=100% }
+Netflix’s latest data underscores the remarkable rise of Hindi-language films and series, which are dominating India’s Top 10 while breaking through to global audiences. As India becomes the world’s most populous country, this momentum highlights its central role in Netflix’s long-term growth strategy.
+
+## Local Fans Loyalty
+* Hindi-language titles are proving to be long-term favorites with Indian viewers.
+
+  - The Great Indian Kapil Show spent an extraordinary 44 weeks in India’s Top 10.
+  
+  - The Railway Men charted for 30 weeks, and Khakee: The Bihar Chapter for 29 weeks.
+
+* These extended runs demonstrate Netflix’s growing audience loyalty and the staying power of local storytelling.
+
+## Global Reach of Hindi-Language Content
+* Indian hits are resonating worldwide, with several titles making Netflix’s Global Top 10.
+
+  - Lucky Baskhar and The Great Indian Kapil Show each earned 19.4 million cumulative views.
+  
+  - Animal drew 13.6 million cumulative views, and The Railway Men reached 8.2 million.
+  
+* In total, 12 Hindi-language shows have appeared in the Global Top 10.
+
+* This global impact shows Hindi-language content is capturing audiences far beyond India.
+
+With India’s scale and surging demand, Netflix has a unique opportunity to strengthen its presence by investing more in Hindi-language productions and amplifying their global reach. By partnering with local creators and expanding original programming, Netflix can further solidify its position in India—while bringing Bollywood and Hindi stories to audiences around the world.
+
+---
+
+# Press Release 3: Open Topic
+
+### Holiday Blockbusters: Netflix Animated Hits Top the Charts
+
+![Animated Movies for Holidays (Source: Netflix)](images/animatedmovie.png){fig-alt="Animated Movies for Holidays (Source: Netflix)" width=100% }
+
+
+Netflix’s viewership study shows animated and family-friendly films thrive during holidays, especially Christmas, drawing kids, parents, and nostalgic adults alike. The data, based on Global Top 10 performance—weeks on chart, total views, and hours watched—confirms cartoons’ broad appeal and status as a holiday tradition.
+
+## Christmas & New Year’s (November–January): Animated Films Take Over
+
+* All 10 top films are animated, showcasing their unmatched holiday dominance.
+
+* Standouts include:
+
+  - The Boss Baby (22 weeks, 49M views, 130M hours) 
+
+  - Despicable Me 2 (19 weeks, 48M views, 159M hours)
+
+  - KPop Demon Hunters (14 weeks, 335M views, 559M hours)
+
+* Additional animated films, such as Minions and Shrek, maintained significant visibility, underscoring the enduring appeal of animated content.
+
+## Summer (June–August): Fun, Too
+
+* Seven out of the Top 10 summer films were animated or family-oriented.
+
+* Films including Sing 2, Paw Patrol: The Movie, and Hotel Transylvania 3 competed alongside high-action releases such as Extraction 2 and The Man from Toronto.
+
+* Notably, KPop Demon Hunters recorded 559 million hours viewed, demonstrating that animated content can rival major live-action releases in audience reach and engagement.
+
+## Easter (March–May): A Balanced Mix
+
+* Easter viewing periods exhibited a mix of animated films (Shrek, Despicable Me 4, Sonic the Hedgehog) and live-action titles (The Adam Project, Damsel).
+
+* This reflects a transitional season where audience interests span both family-focused and broader-appeal content.
+
+These findings confirm that animated films are a powerful and consistent draw for audiences year-round, especially during the festive seasons. This isn't just a trend; it's a clear signal that families and kids are a huge part of the global audience. We can expect Netflix to deliver even more animated magic in the future to make every holiday a little more joyful and a lot more fun.
+
+
+
+# Appendix:
+
+## Task 1: Data Acquisition
+
+```{r}
+#| code-fold: true
+
+#Task 1: Data Acquisition - download global & weekly top 10
+if(!dir.exists(file.path("data", "mp01"))){
+    dir.create(file.path("data", "mp01"), showWarnings=FALSE, recursive=TRUE)
+}
+
+GLOBAL_TOP_10_FILENAME <- file.path("data", "mp01", "global_top10_alltime.csv")
+
+if(!file.exists(GLOBAL_TOP_10_FILENAME)){
+    download.file("https://www.netflix.com/tudum/top10/data/all-weeks-global.tsv", 
+                  destfile=GLOBAL_TOP_10_FILENAME)
+}
+
+COUNTRY_TOP_10_FILENAME <- file.path("data", "mp01", "country_top10_alltime.csv")
+
+if(!file.exists(COUNTRY_TOP_10_FILENAME)){
+    download.file("https://www.netflix.com/tudum/top10/data/all-weeks-countries.tsv", 
+                  destfile=COUNTRY_TOP_10_FILENAME)
+}
+```
+```{r}
+#| code-fold: true
+if(!require("tidyverse")) install.packages("tidyverse")
+library(readr)
+library(dplyr)
+
+# to read the tsv file to dataframe and display data for analysis
+GLOBAL_TOP_10 <- read_tsv(GLOBAL_TOP_10_FILENAME)
+str(GLOBAL_TOP_10)
+glimpse(GLOBAL_TOP_10)
+```
+## Task 2: Data Cleaning
+```{r}
+#| code-fold: true
+# Task 2: Data Cleaning- change the "N/A" to NA
+GLOBAL_TOP_10 <- GLOBAL_TOP_10 |>
+    mutate(season_title = if_else(season_title=="N/A", NA_character_, season_title))
+str(GLOBAL_TOP_10)
+glimpse(GLOBAL_TOP_10)
+#is.na(GLOBAL_TOP_10)
+anyNA(GLOBAL_TOP_10)
+```
+## Task 3: Data Import & clean "N/A"
+```{r}
+#| code-fold: true
+#Task 3: Data Import - use read_tsv with extra parameter to replace the "N/A"
+COUNTRY_TOP_10 <- read_tsv(COUNTRY_TOP_10_FILENAME, na = c("N/A", "NA"))
+str(COUNTRY_TOP_10)
+glimpse(COUNTRY_TOP_10)
+#is.na(COUNTRY_TOP_10)
+anyNA(GLOBAL_TOP_10)
+```
+## Initial Data Exploration
+```{r}
+#| code-fold: true
+#list dataset in table form for easy read
+install.packages("DT", repos = "https://cloud.r-project.org")
+library(DT)
+GLOBAL_TOP_10 |> 
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE))
+```
+
+```{r}
+#| code-fold: true
+#fix the column head to remove "_"
+library(stringr)
+format_titles <- function(GLOBAL_TOP_10){
+    colnames(GLOBAL_TOP_10) <- str_replace_all(colnames(GLOBAL_TOP_10), "_", " ") |> str_to_title()
+    GLOBAL_TOP_10
+}
+
+#format number for easy read
+GLOBAL_TOP_10 |> 
+    format_titles() |>
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('Weekly Hours Viewed', 'Weekly Views'))
+```
+```{r}
+#| code-fold: true
+GLOBAL_TOP_10 |> 
+    select(-season_title) |>
+    format_titles() |>
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('Weekly Hours Viewed', 'Weekly Views'))
+```
+```{r}
+#| code-fold: true
+GLOBAL_TOP_10 |> 
+    mutate(`runtime_(minutes)` = round(60 * runtime)) |>
+    select(-season_title, -runtime) |>
+    format_titles() |>
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('Weekly Hours Viewed', 'Weekly Views'))
+```
+## Task 4: Exploratory Questions
+
+```{r}
+#| code-fold: true
+COUNTRY_TOP_10 |> 
+    head(n=40) |>
+    datatable(options=list(searching=FALSE, info=FALSE))
+
+num_country=length(unique(COUNTRY_TOP_10$country_name))
+
+
+min <- COUNTRY_TOP_10 |> filter(week == min(week, na.rm = TRUE))
+max <- COUNTRY_TOP_10 |> filter(week == max(week, na.rm = TRUE))
+start_week <- min$week[1]
+cur_week   <- max$week[1]
+
+```
+1. How many different countries does Netflix operate in? (You can use the viewing history as a proxy for countries in which Netflix operates.)
+
+Netflix operates in `{r} num_country` countries from week of  `{r} start_week` to the week of `{r} cur_week`
+
+
+```{r}
+#| code-fold: true
+most_cum_week_non_eng_film <-
+GLOBAL_TOP_10 |>
+  filter(category== 'Films (Non-English)') |>
+  filter(cumulative_weeks_in_top_10 == max(cumulative_weeks_in_top_10, na.rm =TRUE)) 
+
+glimpse(most_cum_week_non_eng_film)
+
+```
+2. Which non-English-language film has spent the most cumulative weeks in the global top 10? How many weeks did it spend?
+
+ 
+The non-English-language film, `{r} most_cum_week_non_eng_film$show_title`, has spent the most cummulate weeks in the global top 10. It spent `{r} most_cum_week_non_eng_film$cumulative_weeks_in_top_10` weeks on the global top 10. 
+
+```{r}
+#| code-fold: true
+most_long_runtime_film <-
+GLOBAL_TOP_10 |>
+  mutate(runtime_minutes = round(60 * runtime)) |>
+  filter(category %in% c("Films (English)", "Films (Non-English)"))|>
+  arrange(desc(runtime_minutes)) |>
+  head(n=1)
+
+
+glimpse(most_long_runtime_film)
+
+```
+
+
+
+3. What is the longest film (English or non-English) to have ever appeared in the Netflix global Top 10? How long is it in minutes?
+
+Note that Netflix does not provide runtime for programs before a certain date, so your answer here may be a bit limited.
+
+The longest film that ever appeared in the Netflix global Top 10 is `{r} most_long_runtime_film$show_title`. The film is `{r} most_long_runtime_film$runtime_minutes` minute long.
+
+
+
+
+4. For each of the four categories, what program has the most total hours of global viewership?
+
+Summary Table: 
+```{r}
+#| code-fold: true
+most_total_hours_per_category <-
+GLOBAL_TOP_10 |>
+  group_by(category, show_title) |>
+  summarize(total_hours=sum(weekly_hours_viewed,na.rm=TRUE)) |>
+  slice_max(total_hours, n = 1, with_ties = FALSE)
+
+most_total_hours_per_category |>
+  datatable(options=list(searching=FALSE, info=FALSE)) |>
+  formatRound(c("total_hours"))
+
+```
+
+
+```{r}
+#| code-fold: true
+#filter by category 'tv' show
+#count of each show my show title group by country
+long_run_by_country <-
+COUNTRY_TOP_10 |>
+  filter(category %in% c("TV"))|>
+  group_by(country_name, show_title) |>
+  summarize(weeks_in_top_10 = n()) |>
+  ungroup() |>
+  slice_max(weeks_in_top_10, n=1)
+```
+5. Which TV show had the longest run in a country’s Top 10? How long was this run and in what country did it occur?
+
+The TV show had the longest run in a country's Top 10 is
+`{r} long_run_by_country$show_title`. The TV show was on  `{r} long_run_by_country$country_name`'s Top 10 for `{r} long_run_by_country$weeks_in_top_10` weeks
+
+
+
+```{r}
+#| code-fold: true
+#for each country count how many weeks 
+min_num_of_wk_by_country <-
+COUNTRY_TOP_10 |>
+  group_by(country_name) |>
+  mutate(num_of_week = n_distinct(week)) |>
+  ungroup() |>
+  filter(num_of_week == min(num_of_week)) |>
+  summarise(
+    country_name_no_opt = unique(country_name),
+    last_opt_date = max(week)
+  )
+```
+
+6. Netflix provides over 200 weeks of service history for all but one country in our data set. Which country is this and when did Netflix cease operations in that country?
+
+On `{r} min_num_of_wk_by_country$last_opt_date`, Netflix cease opertation in `{r}  min_num_of_wk_by_country$country_name_no_opt`
+
+
+
+```{r}
+#| code-fold: true
+total_hour_viewed <-
+GLOBAL_TOP_10 |>
+ filter(show_title =="Squid Game") |>
+  summarise(total_hour_viewed = sum(weekly_hours_viewed, na.rm = TRUE)) |>
+  datatable(options=list(searching=FALSE, info=FALSE)) |>
+  formatRound(c("total_hour_viewed"))
+
+```
+7. What is the total viewership of the TV show Squid Game? Note that there are three seasons total and we are looking for the total number of hours watched across all seasons.
+
+The total viewership of the TV show Squid Game (including all 3 seasons) are `{r} total_hour_viewed`
+
+
+
+```{r}
+#| code-fold: true
+#extract the year from week
+#filter movie, title as Red Notice , year=2021
+#sum the weekly_hours_viewed 
+#and use the weekly_hours_viewed*60 (to min)/ 1h58m(118min)
+library(lubridate)
+
+num_views <-
+GLOBAL_TOP_10 |>
+  filter(show_title=="Red Notice") |>
+  mutate(view_year = year(week)) |>
+  filter(view_year == "2021") |>
+  summarize(num_views= sum(weekly_hours_viewed*60)/118) 
+```
+
+8. The movie Red Notice has a runtime of 1 hour and 58 minutes. Approximately how many views did it receive in 2021?
+Hint: The year() function from the lubridate package may be helpful.
+
+The moview Red Notice has around `{r} num_views` views in 2021
+
+
+```{r}
+#| code-fold: true
+#get a list with top #1 show title, and week
+#for each of the record listed in the toplist
+#check if the title appear in weeks later and not weekly_rank =1
+#slice top 
+
+
+get_top_list <-
+  COUNTRY_TOP_10 |>
+  group_by(week) |> 
+  filter(weekly_rank==1 & 	country_name=='United States') |>
+  filter(category == "Films")
+
+get_non_top_list <-
+  COUNTRY_TOP_10 |>
+  group_by(week) |> 
+  filter(weekly_rank!=1 & 	country_name=='United States') |>
+  filter(category == "Films")
+
+result_list <-
+left_join(get_top_list,
+          get_non_top_list,
+          join_by(show_title==show_title)) |>
+  filter(week.x > week.y & weekly_rank.y!=1)# |>
+ # datatable(options=list(searching=FALSE, info=FALSE))   
+result_list
+
+count_film <-
+  result_list |>
+  n_distinct(result_list$show_title)
+
+count_film
+
+recent_film <-  
+  result_list |>
+  slice_max(week.x, n=1) |>
+  distinct(show_title)
+
+recent_film
+```
+
+9. How many Films reached Number 1 in the US but did not originally debut there? That is, find films that first appeared on the Top 10 chart at, e.g., Number 4 but then became more popular and eventually hit Number 1? What is the most recent film to pull this off?
+
+Hint: You will want to create a new variable to identify films that topped the charts at any point during their run.
+
+
+There are `{r} count_film` Films that reach Number 1 in the US but did not originally debut there. `{r} recent_film$show_title` is the most recent film became more popular and eventually hit number 1.
+
+
+
+```{r}
+#| code-fold: true
+# data set is COUNTRY_TOP_10
+# get the weekly_rank = cumulate_weeks_in_top_10=1 => get all top1 in it debut week
+# pivot show_title, # of country count
+Top_debute <-
+COUNTRY_TOP_10 |>
+  filter(cumulative_weeks_in_top_10==1 & weekly_rank==1) |>
+  group_by(show_title) |>
+  summarise(unique_countries = n_distinct(country_name)) |>
+  arrange(desc(unique_countries)) |>
+  slice_max(unique_countries)
+```
+10. Which TV show/season hit the top 10 in the most countries in its debut week? In how many countries did it chart?
+
+`{r} Top_debute$show_title` hit the top 10 in the most countries in its debute week. It was topped in `{r} Top_debute$unique_countries` countries on its debute week. 
+
+## Press Release 1: Upcoming Season of Stranger Things 
+
+Netflix will release the fifth and final season of its hit show Stranger Things at the end of 2025. In preparation for the release, prepare a press release highlighting the broad impact of the previous four seasons. Your press release should refer to both the total viewership, the length of popularity (how many weeks in the top 10) and the multinational appeal of previous seasons. You should also compare the impact of Stranger Things to other popular English-language TV shows to give a sense of its success.
+
+1. total viewership
+```{r}
+GLOBAL_TOP_10 |>
+  filter(show_title == "Stranger Things") |>
+  summarise(total_hours = sum(weekly_hours_viewed, na.rm = TRUE))
+```
+Stranger things has the longest accumnated weekly hours view time (in hours) among TV (English) category.
+## Stringer Things is the Most Viewed TV(English) in Netflix
+2. how many week in the top 10
+```{r}
+GLOBAL_TOP_10 |>
+ filter(show_title == "Stranger Things") |>
+  group_by (show_title, season_title) |>
+  summarise(num_weeks = n_distinct(week), .groups = "drop")
+```
+This is to show each season of stranger things are strong
+Even though data show Season 1 has topped 10, but its due to the data only show up to year 2022, where Stranger Things 1 first release on 2017. However, it still show strong viewership / continuous attraction of the show as it still top the global top 10 after so many years. 
+
+```{r}
+GLOBAL_TOP_10 |>
+ filter(show_title == "Squid Game") |>
+  group_by (show_title, season_title) |>
+  summarise(num_weeks = n_distinct(week), .groups = "drop")
+```
+In compare to the top TV(non English) show - squid game. Squid Game has topped the global top more often than Stranger Things. However, Squid Game Squid Game: Season 3
+(released on June 27, 2025), compare to last season of Stranger Things season 4 (released on May 27, 2022), Stranger Things show stronger engagement/viewership as it topped the global chart 19 times. 
+
+3.multinational appeal of previous seasons
+```{r}
+#for each country, every season, how many times it topped the chart
+COUNTRY_TOP_10 |>
+  filter(show_title == "Stranger Things") |>
+  summarize(num_country=n_distinct(country_name))
+```
+Stranger Things showed in all 93 countries Netflix operates. 
+((Russia is the one doesnt have show topped? ))
+
+```{r}
+#for each country, every season, how many times it topped the chart
+COUNTRY_TOP_10 |>
+  filter(show_title == "Stranger Things") |>
+  group_by(show_title, season_title,country_name) |>
+  summarise(num_appears = n()) |>
+  arrange(country_name, desc(num_appears)) |>
+  datatable(options=list(searching=FALSE, info=FALSE))
+```
+Basically this show all previous 4 season had made to the top of all 93 countries
+
+Conclusion, with the above, we believe the coming season release of stranger things will drive viewership as well as increase viewership of previous seasons as well. 
+
+## Press Release 1: Commercial Success in India
+```{r}
+#get list of Hindi-language films and TV
+#get the list of top shows viewed in India 
+#get the list of top shows viewed in US
+#exclude the popular US shows from popular India shows
+
+india_shows <- COUNTRY_TOP_10 |>
+  filter(country_name == "India")
+
+india_shows
+
+us_shows <- COUNTRY_TOP_10 |>
+  filter(country_name == "United States")
+us_shows
+
+india_only_hits <- india_shows |>
+  anti_join(us_shows, by = "show_title") |>
+  group_by(show_title) |>
+  summarise(dist_count= n_distinct(week)) |>
+  slice_max(dist_count,n=10) 
+
+india_only_hits
+#Looks like we get the list of Hindu language shows, the number of time they made to the weekly top 10 is great! 
+
+#India hit that make to global top
+get_globalviews_india_shows <- india_only_hits |>
+  inner_join(GLOBAL_TOP_10, by = "show_title") |>
+  group_by(show_title) |>
+  summarise(
+    total_view_indian= sum(weekly_views, na.rm = TRUE)
+    ) |>
+  slice_max(total_view_indian,n=10)
+  
+
+get_globalviews_india_shows
+#Yes! There are 12 hindu language shows made the appearance in global top 10. 
+#It proves the popularity of the hindu language shows and people like Bollywood!
+```
+
+
+
+```{r}
+library(lubridate)
+
+#how many weeks this is on the top
+#Summer
+print("Summer")
+GLOBAL_TOP_10 |>
+ filter(
+   category %in% c("Films (English)") &
+     month(week) %in% 6:8
+   )|>
+  group_by (show_title) |>
+  summarise(
+    num_weeks = n_distinct(week),
+    end_week = max(week),
+    start_week = min(week),
+    total_views = sum(weekly_views, na.rm = TRUE), 
+    total_hour_viewed = sum(weekly_hours_viewed, na.rm = TRUE)
+    ) |>
+  select (show_title, num_weeks, total_views, total_hour_viewed) |>
+  slice_max(num_weeks, n=10)# |>
+ # datatable(options=list(searching=FALSE, info=FALSE))  |>
+# formatRound(c('total_views', 'total_hour_viewed'))
+ 
+  #mutate(start_month = month(start_week)) |>
+  #filter (start_month >5 & start_month<9) |>
+  #slice_max(num_weeks, n=20)
+#christmas
+print("Christmas")
+GLOBAL_TOP_10 |>
+ filter(
+   category %in% c("Films (English)") &
+     month(week) %in% 11:1
+   )|>
+  group_by (show_title) |>
+  summarise(
+    num_weeks = n_distinct(week),
+    end_week = max(week),
+    start_week = min(week),
+    total_views = sum(weekly_views, na.rm = TRUE), 
+    total_hour_viewed = sum(weekly_hours_viewed, na.rm = TRUE)
+    ) |>
+  select (show_title, num_weeks, total_views, total_hour_viewed) |>
+  slice_max(num_weeks, n=10) #|>
+ # datatable(options=list(searching=FALSE, info=FALSE))   |>
+ # formatRound(c('total_views', 'total_hour_viewed'))
+
+#easter
+#
+#
+print("Easter")
+GLOBAL_TOP_10 |>
+ filter(
+   category %in% c("Films (English)") &
+     month(week) %in% 3:5
+   )|>
+  group_by (show_title) |>
+  summarise(
+    num_weeks = n_distinct(week),
+    end_week = max(week),
+    start_week = min(week),
+    total_views = sum(weekly_views, na.rm = TRUE), 
+    total_hour_viewed = sum(weekly_hours_viewed, na.rm = TRUE)
+    ) |>
+  select (show_title, num_weeks, total_views, total_hour_viewed) |>
+  slice_max(num_weeks, n=10)  #|>
+  #datatable(options=list(searching=FALSE, info=FALSE)) |>
+  #formatRound(c('total_views', 'total_hour_viewed'))
+
+```

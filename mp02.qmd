@@ -4,21 +4,32 @@ author: "Wing Chan"
 ---
 # Policy Brief
 
+
 ## Overview
-The “Yes In My Backyard” (YIMBY) initiative supports zoning and development reforms that expand affordable housing and boost local economies. Guayama, PR, a YIMBY-aligned metro, shows how increased housing supply can lower rent burdens and raise wages. In contrast, Roanoke, VA, a more restrictive market, faces slower growth. Federal incentives tied to housing production would help communities like these unlock grants, support wage gains, and improve affordability.
+The “Yes In My Backyard” (YIMBY) initiative supports zoning and development reforms that expand affordable housing and boost local economies. Cedar Rapids, IA, a YIMBY-aligned metro, shows how increased housing supply can lower rent burdens and raise wages. In contrast, Miami–Fort Lauderdale–West Palm Beach, FL, a more restrictive market, faces slower growth. Federal incentives tied to housing production would help communities like these unlock grants, support wage gains, and improve affordability.
+
+## Proposed Congressional Sponsors (by hometown):
+Sponsors from Cedar Rapids, IA (16300) & Miami–Fort Lauderdale–West Palm Beach, FL (33100)
 
 ## Key Findings
-
+Housing and Income Snapshot
+Cedar Rapids, IA (16300) has one of the lowest rent burdens at 70.8 and steady housing development, while Miami–Fort Lauderdale–West Palm Beach, FL (33100) faces a much higher burden of 144. Average wages in Cedar Rapids have grown consistently, rising 11% between 2022 and 2023, compared with 4% yearly in Miami. Combined with lower housing costs and steady development, Cedar Rapids offers more positive living conditions and stronger economic opportunities for residents than the Miami metro area.
 
 ## Potential Support from Key Occupations
-
+Service-industry workers—including retail, hospitality, healthcare support, and food services—represent a substantial share of employment in both Cedar Rapids, IA (16300) and Miami–Fort Lauderdale–West Palm Beach, FL (33100). Policies that improve housing affordability and support wage growth can directly benefit these workers by reducing rent burdens and increasing disposable income, strengthening local labor markets and overall economic stability in both metro areas.
 
 ## Suggested Metrics for Federal Program Design
-
+To ensure measurable outcomes and facilitate legal translation, metrics following are recommened:
+- Housing Supply Growth: Number of housing units permitted per year. 
+- Affordability Ratio: Share of households spending less than 30% of income on rent.
+- Income & Economic Growth: Year-over-year wage growth relative to the national average.
+- Population Growth: Percent change in total population to capture demand and community vitality.
 
 ## Conclusion
+The experiences of Cedar Rapids, IA and Miami–Fort Lauderdale–West Palm Beach, FL demonstrate that proactive, YIMBY-aligned housing policies can lower rent burdens, support wage growth, and strengthen local economies. By sponsoring initiatives that encourage municipalities to adopt such reforms, policymakers can help communities unlock federal incentives, expand housing supply, and improve living conditions for residents. Supporting YIMBY-aligned policies offers a clear path to more affordable, equitable, and economically vibrant neighborhoods.
 
 
+## Data Acquisition - Task 1: Data Import
 ```{r}
 #| code-fold: true
 #get US census data
@@ -385,6 +396,7 @@ The last year in which the NYC CBSA had the most data scientists in the country 
 5. What fraction of total wages in the NYC CBSA was earned by people employed in the finance and insurance industries (NAICS code 52)? In what year did this fraction peak?
 
 ```{r}
+#| code-fold: true
 library(DT)
 
 INCOME_PER_YEAR_FIN <-
@@ -778,4 +790,36 @@ yearly_wages_nimby <- WAGES_GEOID_NAME |>
   )
 
 yearly_wages_nimby
+```
+## Extra Credit Opportunity #01: Relationship Diagram
+![data relationship diagram](images/mp02_data_relationship_diagram){fig-alt="data relationship diagram" width=100% }
+## Extra Credit Opportunity #02: Highlighting Important Units in a Spaghetti Plot
+```{r}
+#| code-fold: true
+install.packages("gghighlight")
+library(gghighlight)
+
+#prepare NYC & Los Angeles to highlight
+# GEOID = 35620 NYC
+
+HOUSEHOLDS_NYC_LA <-
+HOUSEHOLDS |> 
+  inner_join(GEOID_NAME, join_by(GEOID == GEOID))  |>
+  mutate(isNYC_LA = case_when( state=='LA' ~ 1,  GEOID == 35620 ~ 1, TRUE ~ 0))
+
+ggplot(
+  HOUSEHOLDS_NYC_LA, 
+  aes(x=year, y=households, color=NAME.x)) + 
+  geom_point() +
+  geom_line() +
+  gghighlight(isNYC_LA > 0) +
+  scale_y_log10(
+    labels = label_number(big.mark = ","),
+    breaks = scales::breaks_log(n = 5)
+  )+
+  guides(color="none") + 
+  xlab("Year") +
+  ylab("Households") +
+  theme_bw() +
+  ggtitle("Evolution of average household size over time")
 ```

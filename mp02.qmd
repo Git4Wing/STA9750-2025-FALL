@@ -1,7 +1,24 @@
 ---
-title: "mp02"
+title: "Mini-Project#02"
 author: "Wing Chan"
 ---
+# Policy Brief
+
+## Overview
+The “Yes In My Backyard” (YIMBY) initiative supports zoning and development reforms that expand affordable housing and boost local economies. Guayama, PR, a YIMBY-aligned metro, shows how increased housing supply can lower rent burdens and raise wages. In contrast, Roanoke, VA, a more restrictive market, faces slower growth. Federal incentives tied to housing production would help communities like these unlock grants, support wage gains, and improve affordability.
+
+## Key Findings
+
+
+## Potential Support from Key Occupations
+
+
+## Suggested Metrics for Federal Program Design
+
+
+## Conclusion
+
+
 ```{r}
 #| code-fold: true
 #get US census data
@@ -505,6 +522,32 @@ ggplot(NYC_RENT_BURDEN, aes(x = year, y = rent_to_national_income_ratio)) +
     y = "Rent Burden (Rent-to-Income Ratio)"
   ) +
   theme_minimal()
+
+HIGH_RENT_BURDEN <-
+RENT_BURDEN |>
+  group_by(GEOID) |>
+  summarise(avg_rent_burden = mean(rent_to_national_income_ratio, na.rm = TRUE)) |>
+  slice_max(avg_rent_burden, n = 10)
+
+HIGH_RENT_BURDEN |>
+  left_join(GEOID_NAME, join_by(GEOID)) |>
+  select (GEOID, NAME, avg_rent_burden) |>
+  datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('avg_rent_burden'))
+
+
+LOW_RENT_BURDEN <-
+RENT_BURDEN |>
+  group_by(GEOID) |>
+  summarise(avg_rent_burden = mean(rent_to_national_income_ratio, na.rm = TRUE)) |>
+  slice_min(avg_rent_burden, n = 10)
+
+LOW_RENT_BURDEN |>
+  left_join(GEOID_NAME, join_by(GEOID)) |>
+  select (GEOID, NAME, avg_rent_burden) |>
+  datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('avg_rent_burden'))
+
 ```
 
 ## Data Integration and Initial Exploration - Task 5: Housing Growth
@@ -669,3 +712,70 @@ ggplot(data_for_chart2, aes(x = GEOID, y = mean_composite)) +
   theme_minimal()
 ```  
 ## Data Integration and Initial Exploration - Task 7: Policy Brief
+```{r}
+HIGH_RENT_BURDEN
+
+
+HIGH_RENT_BURDEN |>
+  left_join(PERMITS, join_by(GEOID == CBSA)) |>
+  left_join(GEOID_NAME, join_by(GEOID == GEOID)) |>
+  datatable(options=list(searching=FALSE, info=FALSE)) 
+
+# 33100 Miami-Fort Lauderdale-West Palm Beach, FL Metro Area -- avg rent burden is 144 means 44% more >> nimby
+
+```
+
+```{r}
+LOW_RENT_BURDEN
+
+LOW_RENT_BURDEN |>
+  left_join(PERMITS, join_by(GEOID == CBSA)) |>
+  left_join(GEOID_NAME, join_by(GEOID == GEOID)) |>
+  datatable(options=list(searching=FALSE, info=FALSE)) 
+# 16300 Cedar Rapids, IA Metro Area -- avg rent burden is 70.8 (among the lowest across the states) and steady housing development yearly >> yimby
+```
+
+```{r}
+WAGES_GEOID_NAME|>
+  filter (GEOID == 16300) |>
+  group_by(YEAR) |>
+  mutate(tot_yr_employment = sum(EMPLOYMENT, na.rm = TRUE)) |>
+  ungroup() |>
+  mutate(ind_percentage = (EMPLOYMENT / tot_yr_employment) * 100) |>
+  slice_max(ind_percentage, n=10) 
+
+WAGES_GEOID_NAME|>
+  filter (GEOID == 33100) |>
+  group_by(YEAR) |>
+  mutate(tot_yr_employment = sum(EMPLOYMENT, na.rm = TRUE)) |>
+  ungroup() |>
+  mutate(ind_percentage = (EMPLOYMENT / tot_yr_employment) * 100) |>
+  slice_max(ind_percentage, n=10) 
+```
+
+```{r}
+WAGES_GEOID_NAME
+yearly_wages_yimby <- WAGES_GEOID_NAME |>
+  filter(GEOID == 16300) |>
+  group_by(YEAR) |>
+  summarise(yearly_tot_wage = sum(AVG_WAGE, na.rm = TRUE), .groups = "drop") |>
+  arrange(YEAR) |>  # make sure years are in order
+  mutate(
+    pct_change = (yearly_tot_wage / lag(yearly_tot_wage) - 1) * 100, 
+    avg_pct_change = mean(pct_change, na.rm = TRUE)
+  ) 
+
+yearly_wages_yimby
+
+yearly_wages_nimby <- WAGES_GEOID_NAME |>
+  filter(GEOID == 33100) |>
+  group_by(YEAR) |>
+  summarise(yearly_tot_wage = sum(AVG_WAGE, na.rm = TRUE), .groups = "drop") |>
+  arrange(YEAR) |>  # make sure years are in order
+  mutate(
+    pct_change = (yearly_tot_wage / lag(yearly_tot_wage) - 1) * 100,
+    avg_pct_change = mean(pct_change, na.rm = TRUE)
+  )
+
+yearly_wages_nimby
+```

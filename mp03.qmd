@@ -1,0 +1,499 @@
+---
+title: "Mini-Project #03: Visualizing and Maintaining the Green Canopy of NYC"
+author: "Wing Chan"
+---
+```{r}
+
+```
+
+# Data Acquisition
+NYC City Council Districts
+Task 1: Download NYC Citcy Council District Boundaries
+```{r} 
+# Create data/mp03 under working folder if it doesnt exsit 
+if(!dir.exists(file.path("data", "mp03"))){
+dir.create(file.path("data", "mp03"), showWarnings=FALSE, recursive=TRUE)
+}
+
+#download zip file  -- City Council (Clipped to Shoreline) Most Recent Release
+#https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/city-council/nycc_25c.zip
+#
+current_url <- "https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/city-council/nycc_25c.zip"
+destfile <- "data/mp03/nycd_23c.zip"
+if (!file.exists(destfile)) {
+  download.file(current_url, destfile = destfile, mode = "wb")
+  message("File downloaded successfully to: ", destfile)
+} else {
+  message("File already exists at: ", destfile)
+}
+
+#unzip the downloaded file
+unzip(zipfile = destfile, exdir= "data/mp03")
+
+#Read the shp file in the unzipped directory using sf::st_read.
+library(sf)
+shp_file = "data/mp03/nycc_25c/nycc.shp"
+nyc_councildistricts <- st_read(shp_file)
+
+#Transform the result
+nyc_councildistricts <- st_transform(nyc_councildistricts, crs="WGS84")
+nyc_councildistricts
+```
+# NYC Tree Points
+# Task 2: Download Tree Points
+
+```{r}
+library(httr2)
+
+# --- Setup ---
+dir.create("data/mp03/batches", recursive = TRUE, showWarnings = FALSE)
+combined_file <- "data/mp03/treepoints_all.gpkg"
+
+# --- Check if combined file already exists ---
+if (file.exists(combined_file)) {
+  cat("✅ Combined dataset already exists at", combined_file, "\n")
+} else {
+  
+  ENDPOINT <- "https://data.cityofnewyork.us/resource/hn5i-inap.geojson"
+  BATCH_SIZE <- 30000
+  
+  # --- Detect last completed batch ---
+  existing_batches <- list.files("data/mp03/batches", pattern = "tree_batch_\\d+\\.geojson$", full.names = TRUE)
+  
+  if (length(existing_batches) > 0) {
+    last_batch <- max(as.integer(gsub("\\D", "", basename(existing_batches))))
+    OFFSET <- last_batch * BATCH_SIZE
+    BATCH <- last_batch + 1
+    cat("🔄 Resuming download from batch", BATCH, "offset", OFFSET, "\n")
+  } else {
+    OFFSET <- 0
+    BATCH <- 1
+    cat("🚀 Starting fresh download\n")
+  }
+  
+  END_OF_EXPORT <- FALSE
+  
+  # --- Download loop ---
+  while (!END_OF_EXPORT) {
+    cat("\n📦 Downloading batch", BATCH, "offset", OFFSET, "\n")
+    
+    # Ensure OFFSET is plain integer to avoid scientific notation
+    offset_plain <- as.integer(OFFSET)
+    url <- paste0(ENDPOINT, "?$limit=", BATCH_SIZE, "&$offset=", offset_plain)
+    cat("🔗 API Request URL:", url, "\n")
+    
+    # Retry logic (up to 3 attempts)
+    success <- FALSE
+    tries <- 0
+    while (!success && tries < 3) {
+      tries <- tries + 1
+      cat("🔁 Attempt", tries, "for batch", BATCH, "\n")
+      
+      resp <- tryCatch({
+        request(url) |> req_perform()
+      }, error = function(e) {
+        message("⚠️ Attempt ", tries, " failed: ", e$message)
+        Sys.sleep(3)
+        return(NULL)
+      })
+      
+      if (!is.null(resp)) success <- TRUE
+    }
+    
+    if (!success) {
+      message("❌ Failed after 3 attempts, stopping at batch ", BATCH)
+      break
+    }
+    
+    # Save batch locally
+    batch_file <- sprintf("data/mp03/batches/tree_batch_%03d.geojson", BATCH)
+    
+    # Skip if file already exists
+    if (file.exists(batch_file)) {
+      cat("⚠️ Batch file already exists, skipping:", batch_file, "\n")
+    } else {
+      writeBin(resp_body_raw(resp), batch_file)
+      cat("💾 Saved batch to", batch_file, "\n")
+    }
+    
+    # Stop if small file (probably end of dataset)
+    if (file.size(batch_file) < 10000) {
+      message("✅ End of export reached (small file size).")
+      unlink(batch_file)
+      END_OF_EXPORT <- TRUE
+      break
+    }
+    
+    OFFSET <- OFFSET + BATCH_SIZE
+    BATCH <- BATCH + 1
+    Sys.sleep(2)  # polite pause to avoid rate limit
+  }
+  
+  cat("\n🎉 Download complete. Files saved in data/mp03/batches\n")
+}
+
+```
+```{r}
+library(sf)
+library(dplyr)
+
+combined_file <- "data/mp03/treepoints_all.gpkg"
+
+# --- Check if combined file already exists ---
+if (file.exists(combined_file)) {
+  cat("✅ Combined dataset already exists at", combined_file, "\n")
+  treepoints_sf <- st_read(combined_file, quiet = TRUE)
+} else {
+  # List all batch files
+  batch_files <- list.files("data/mp03/batches", pattern = "\\.geojson$", full.names = TRUE)
+  cat("📂 Found", length(batch_files), "files to read.\n")
+  
+  # Read each file into sf object
+  all_batches <- lapply(batch_files, function(f) {
+    cat("Reading", f, "\n")
+    tryCatch(st_read(f, quiet = TRUE), error = function(e) NULL)
+  })
+  
+  # Combine all batches
+  treepoints_sf <- bind_rows(all_batches)
+  
+  # Save combined file
+  st_write(treepoints_sf, combined_file, delete_dsn = TRUE)
+  
+  cat("✅ Combined dataset with", nrow(treepoints_sf), "records saved to", combined_file, "\n")
+}
+```
+# Data Integration and Initial Exploration
+Task 3: Plot All Tree Points
+
+```{r}
+library(ggplot2)
+library(sf)
+
+# Base map with NYC council districts (polygon layer)
+ggplot() +
+  # Council district boundaries
+  geom_sf(
+    data = nyc_councildistricts,
+    fill = "grey95",
+    color = "grey40",
+    size = 0.4
+  ) +
+  
+  # Trees (point layer)
+  geom_sf(
+    data = treepoints_sf,        # or treepoints_sf
+    color = "#80B40A",               # green
+    alpha = 0.1,                     # transparency to reduce overplotting
+    size = 0.1                      # small points for legibility
+  ) +
+  
+  # Titles and labels
+  labs(
+    title = "NYC Street Trees by Council District"
+  ) +
+  
+  # Styling
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_blank(),
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12)
+  )  
+  
+```
+
+
+
+
+
+```{r}
+#get tree sample
+treepoints_sample <- treepoints_sf |>
+  slice_sample(n = 100000)
+#check sample data
+head(treepoints_sample)
+summary(treepoints_sample)
+#transform
+treepoints_sample <- st_transform(treepoints_sample, st_crs(nyc_councildistricts))
+
+#spatial join
+districts_trees_contain_s <- st_join(nyc_councildistricts, treepoints_sample, join = st_contains)
+#check sample 
+summary(districts_trees_contain_s)
+
+#--- Full set of data ---#
+treepoints_sf <- st_transform(treepoints_sf, st_crs(nyc_councildistricts))
+summary(treepoints_sf)
+#spatial join
+districts_trees <- st_join(nyc_councildistricts, treepoints_sf, join = st_contains)
+#check sample 
+summary(districts_trees)
+
+## --- Q1--- ##
+district_tree_counts <- 
+  districts_trees |>
+  st_drop_geometry() |> # Drop geometry for easy counting
+  group_by(CounDist) |> # adjust column name as needed
+  summarise(tree_count = n())
+
+Most_tree_district <- district_tree_counts |> 
+  slice_max(order_by=tree_count , n=1)
+```
+# Task 4: District-Level Analysis of Tree Coverage
+1. Which council district has the most trees?
+
+District `{r} Most_tree_district$CounDist` has most trees. There are `{r} Most_tree_district$tree_count` in the district. 
+
+```{r}
+tree_density <-
+districts_trees |>
+  st_drop_geometry() |> # Drop geometry for easy counting
+  group_by(CounDist, Shape_Area) |>
+  summarise(tree_count = n()) |>
+  mutate(tree_density = (tree_count/Shape_Area)*100) |>
+  ungroup()
+
+Highest_tree_density <-
+  tree_density |>
+  slice_max(order_by= tree_density, n=1)
+
+Highest_tree_density
+```
+2. Which council district has the highest density of trees? The Shape_Area column from the district shape file will be helpful here.
+
+
+District `{r} Highest_tree_density$CounDist` has highest density of trees of `{r} Highest_tree_density$tree_density`%.  
+
+```{r}
+#Q3
+Top_dead_tree_district <-
+districts_trees |>
+  st_drop_geometry() |> # Drop geometry for easy counting
+  group_by(CounDist) |>
+  summarise(
+    total_trees = n(),                        # (1) Total trees per district
+    total_dead_trees = sum(tpcondition == "Dead", na.rm = TRUE),  # (2) Dead trees
+    percent_dead_trees = (total_dead_trees / total_trees) * 100   # (3) Percentage
+  )|>
+  ungroup() |>
+  slice_max(order_by=percent_dead_trees, n=1)
+```
+
+3. Which district has highest fraction of dead trees out of all trees?
+
+District `{r} Top_dead_tree_district$CounDist` has highest fraction of dead trees of `{r} Top_dead_tree_district$percent_dead_trees`% .
+
+```{r}
+#Q4
+tree_species_manhattan <- 
+  districts_trees |>
+  # Add borough column based on CounDist
+  mutate(
+    borough = case_when(
+      CounDist >= 1  & CounDist <= 10 ~ "Manhattan",
+      CounDist >= 11 & CounDist <= 18 ~ "Bronx",
+      CounDist >= 19 & CounDist <= 32 ~ "Queens",
+      CounDist >= 33 & CounDist <= 48 ~ "Brooklyn",
+      CounDist >= 49 & CounDist <= 51 ~ "Staten Island",
+      TRUE ~ NA_character_            # handle unexpected values
+    )
+  ) |>
+  #Filter for Manhattan only
+  filter(borough == "Manhattan")|>
+  # Drop geometry for easy counting
+  st_drop_geometry() |> 
+  #Count number of trees by species
+  group_by(genusspecies) |> 
+  summarise(tree_count = n(), .groups = "drop")
+  
+Top_tree_species_manhattan <-
+  tree_species_manhattan |>
+  slice_max(order_by = tree_count, n=1)
+
+```
+4. What is the most common tree species in Manhattan?
+
+The most common tree speies in Manhattan is `{r} Top_tree_species_manhattan$genusspecies`. There are `{r} Top_tree_species_manhattan$tree_count` `{r} Top_tree_species_manhattan$genusspecies` in Manhattan. 
+
+```{r}
+#Q5
+library(sf)
+#spatial join using st_intersects
+trees_districts <- st_join(treepoints_sf, nyc_councildistricts, join = st_intersects)
+
+new_st_point <- function(lat, lon, ...){
+  st_sfc(st_point(c(lon, lat)), ...) |>  
+    st_set_crs("WGS84")                  
+}
+
+#Lat lon for Baruch College
+baruch_college <- new_st_point(40.740159, -73.98338)
+
+# Check
+baruch_college
+#transform to align 
+trees_districts <- st_transform(trees_districts, st_crs(baruch_college))
+trees_districts
+
+trees_districts <- trees_districts |>
+  filter(  CounDist >= 1  & CounDist <= 10 ) |>#only Manhatten
+  mutate(distance_to_baruch = st_distance(geom, baruch_college))
+
+closest_tree <-
+  trees_districts |>
+  slice_min(order_by = distance_to_baruch, n=1)
+
+closest_tree
+```
+5. What is the species of the tree closest to Baruch’s campus?
+
+The species of the tree closest to Baruch’s campus is `{r} closest_tree$genusspecies` . 
+# Government Project Design
+
+Task 5: NYC Parks Proposal
+
+# Tree Equity Initiative: Greening District 26 – A Proposal for 10,642 New Trees
+
+Prepared for NYC Parks & City Council
+November 2025
+
+### Background
+This proposal outlines the District 26 Tree Equity Initiative, a critical project designed to enhance environmental quality and resident well-being in the neighborhoods of District 26. The primary goal is to address the district's severely underdeveloped tree canopy, focusing on areas identified as vulnerable: industrial zones, underutilized open spaces along rail corridors, and exposed waterfronts. The project involves the systematic removal of hazardous stumps, comprehensive planting of new street and park trees, and the establishment of a robust program to ensure the long-term success of the new green infrastructure. Investing in tree canopy is investing in public health, cooling critical heat islands, and improving air quality.
+
+### The Tree Equity Goal
+Based on the goal of reaching the average tree density observed across the New York City districts, the scope of this project is set to address the current deficit. The target of 10,642 trees will raise District 26's tree count from 15,372 to 26,014, lifting the district's density to the current NYC district average of approximately 0.015468 trees per square foot of public space. 
+
+### [Sub title here]
+[[map chart here]]
+The above visualization of District 26 provides highlights two critical areas for tree implementation:
+
+Comparison to the Waterfront Corridors (in dark green): Areas along the East River (Eastside) show high potential for increased density, contrasting with other districts (like District 4 or 5) that have already implemented robust waterfront greening.
+
+Industrial Zones: The southern, former factory zones and areas adjacent to the rail lines present expansive, underutilized opportunities for tree installation to mitigate the heat island effect and buffer residential areas.
+
+District 26 currently holds the dubious distinction of having one of the lowest tree densities among its peers, making it an ideal, high-impact candidate for this federal investment.
+
+### Why District 26
+[[Missing one non map data visualization -- to add to a point]]
+
+[show table of lowest 5 tree density]
+District 26’s tree density of 0.00914 is significantly below the NYC district average of 0.015468, highlighting a clear need for intervention. Although some districts have lower absolute tree counts, their larger land areas often obscure the urgency of improvement. In contrast, District 26’s smaller area makes its low density both an urgent and manageable deficit. The accompanying graphic underscores this disparity by visually contrasting District 26’s density with that of comparable districts and the citywide mean, demonstrating that District 26 not only has the available land area but also represents the most strategic opportunity for investment to advance environmental equity across New York City.
+
+### Conclusion
+This proposal addresses District 26’s urgent tree canopy deficit, which affects public health and quality of life. The Urban Canopy & Resilience Initiative targets the planting of 10,642 new trees in high-potential areas, providing a data-driven solution to improve environmental equity. We urge the committee to approve this investment for a greener, healthier, and more resilient District 26.
+
+
+```{r}
+#for Task 5 :=> try to find the lowest tree density district
+lowest_tree_density <-
+  tree_density |>
+  slice_min(order_by= tree_density, n=10)
+
+lowest_tree_density
+#1       31 507654144.      31318      0.00617 <- JFK airport
+#2       50 665196534.      52439      0.00788 <- park included
+#3       32 358667790.      30261      0.00844 <- park included 
+#4       46 277719690.      24304      0.00875 <- park included
+#5       26 168180998.      15372      0.00914 <- area possible for improve**
+
+summary(tree_density)
+##Mean   :0.015468
+
+#tree need to plan for this district to meet avg green
+# 26014.24 (total) - 15372 (current) = 10642 more trees needed
+# formular = 168180998*0.015468/100
+# 
+tree_density |> 
+  filter( CounDist == 26)
+
+#graph 
+#compare the tree density vs waterfronts (east/west) 
+#get only graphing district 
+district26 <-
+nyc_councildistricts |>
+  #filter (CounDist ==26)
+  filter(CounDist %in% c(26, 4, 5))
+
+#get only trees in district 26
+trees_districts26 <-
+  districts_trees |>
+  #filter(CounDist == 26) |>
+  filter(CounDist %in% c(26)) |>
+  select(objectid) |>
+  st_drop_geometry() |> #drop the join geometry
+  inner_join(treepoints_sf, by="objectid")
+
+summary(trees_districts26)
+  
+trees_districts_compare <-
+  districts_trees |>
+  #filter(CounDist == 26) |>
+  filter(CounDist %in% c(4, 5)) |>
+  select(objectid) |>
+  st_drop_geometry() |> #drop the join geometry
+  inner_join(treepoints_sf, by="objectid")
+summary(trees_districts_compare)
+
+# Combine both tree data frames with a label for legend
+trees_combined <- bind_rows(
+  trees_districts26 |> mutate(group = "District 26"),
+  trees_districts_compare |> mutate(group = "Districts 4 & 5")
+)
+
+
+#Map 
+library(ggplot2)
+library(sf)
+# Base map with NYC council districts (polygon layer)
+ggplot() +
+  # Council district boundaries
+  geom_sf(
+    data = district26,
+    aes(geometry = geometry),
+    fill = "grey95",
+    color = "grey40",
+    size = 0.4
+  ) +
+  
+  # Tree points with mapped color (so ggplot knows to make a legend)
+  geom_sf(
+    data = trees_combined,
+    aes(geometry = geom, color = group),
+    alpha = 0.3,
+    size = 0.2
+  ) +
+  
+  # Color legend setup (defined outside of geom)
+  scale_color_manual(
+    name = "Tree Locations",
+    values = c(
+      "District 26" = "#B8CD0E",
+      "Districts 4 & 5" = "#2A6417"
+    ),
+    guide = guide_legend(
+      override.aes = list(size = 4, alpha = 1) # Make legend dots bigger & opaque
+    )
+  ) +
+  
+  # Titles and labels
+  labs(
+    title = "Comparison of Tree Distribution"
+  ) +
+  
+  # Styling
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_blank(),
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(face = "bold"),
+    legend.position = "bottom"
+  )
+```

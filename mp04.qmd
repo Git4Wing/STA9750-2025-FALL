@@ -1,0 +1,439 @@
+---
+title: "Mini-Project#04"
+author: "Wing Chan"
+---
+
+```{r}
+# install packages if needed
+if (!requireNamespace("httr2", quietly = TRUE)) install.packages("httr2")
+if (!requireNamespace("rvest", quietly = TRUE)) install.packages("rvest")
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("tidyr", quietly = TRUE)) install.packages("tidyr")
+if (!requireNamespace("lubridate", quietly = TRUE)) install.packages("lubridate")
+if (!requireNamespace("stringr", quietly = TRUE)) install.packages("stringr")
+
+library(httr2)
+library(rvest)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(stringr)
+library(tidyverse)
+
+```
+
+# Data Acquisition
+## Task 1: Download CES Total Nonfarm Payroll
+
+
+```{r}
+# ---- Step 1: Build the POST request ----
+req <- request("https://data.bls.gov/pdq/SurveyOutputServlet") |>
+  req_method("POST") |>
+  req_body_form(
+    series_id    = "CES0000000001",
+    years_option = "specific_years",
+    from_year    = "1979",
+    to_year      = "2025",
+    file_format  = "text",
+    output_type  = "column",
+    tref         = "false"
+  )
+
+resp <- req |> req_perform()
+
+# ---- Step 2: Parse HTML ----
+html <- resp |> resp_body_html()
+
+# ---- Find the table ----
+tbl <- html |> html_element("#table0") |> html_table()
+
+# ---- Inspect structure ----
+head(tbl) #check top records
+tail(tbl) #check last records 
+
+# ---- transform the data ----
+nonfarm_employment_data <- tbl |> 
+  mutate(
+    # Extract month number from Period column (drops the "M")
+    month = str_remove(Period, "M") |> as.integer(),
+    
+    # Create date using Year + month + day = 1
+    date = make_date(year = as.integer(Year), month = month, day = 1),
+    
+    # Convert Value to numeric
+    level = as.numeric(Value)
+  ) |>
+  select(date, level) |>
+  arrange(date) |>
+  drop_na() #remove null
+
+# ---- inspect transformed data ----
+nonfarm_employment_data
+tail(nonfarm_employment_data) #dropped the (P : preliminary)
+```
+
+#CES Revisions - Task 2: Download CES Revisions Tables
+```{r}
+
+
+fx_ces_rev <- function(year)
+{
+#function here (can loop through years anchor)
+url <- paste0("https://www.bls.gov/web/empsit/cesnaicsrev.htm#", year)
+
+
+# 1. Request the page -------------------------------------------------------
+resp <- request(url) %>%
+  #req_url_path_append("#2024") %>%           # optional: jump to anchor
+  req_headers(`User-Agent` = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:143.0) Gecko/20100101 Firefox/143.0") %>%
+  req_error(is_error = \(resp) FALSE) %>%
+  req_perform()
+
+# Check status 
+resp %>% resp_check_status()
+
+# 2. Parse the specific table we want ---------------------------------------
+raw_table <- resp %>% 
+  resp_body_html() %>%
+  html_element(paste0("table#",year)) %>%     # the exact id from your original HTML
+  html_table(header = FALSE, fill = TRUE)
+
+yearly_ces_rev<- raw_table %>%
+  slice(4:15) %>%                 # keep only Jan to Dec (rows 4–15)
+  select(X3, X5, X8) %>%          # X3 = 1st (original), X5 = 3rd (final), X8 = total revision
+  set_names(c("original", "final", "revision")) %>%
+  mutate(across(everything(), as.numeric),
+         Date = seq(as.Date(paste0(year, "-01-01")), 
+                    as.Date(paste0(year, "-12-01")), 
+                    by = "1 month")) %>%
+  select(Date, original, final, revision)
+
+return(yearly_ces_rev)
+}
+
+
+# --------------------------------------------------------------
+# Apply to all years 1979–2025 and combine
+# --------------------------------------------------------------
+
+all_revisions <- map_dfr(1979:2025, fx_ces_rev)
+
+
+#Inspect the output 
+#Check NA column 
+#found 2003 Mar and Apr have NA/ 2025 Aug (not yet update data due to shut down of govt)
+all_revisions %>%
+  filter(if_any(everything(), is.na)) %>%
+  mutate(which_na = apply(is.na(.), 1, which))
+```
+
+By joining the two tables, then compute 6 statistics about CES over the past 45 years
+```{r}
+#Joining the two tables
+df <- nonfarm_employment_data %>%
+  left_join(all_revisions, join_by("date" == "Date"))
+
+#Categorizing date by decade
+df <- df %>%
+  drop_na(original, final, revision) %>%
+  rename(Date = date, employment = level) %>%
+  mutate(
+    year = year(Date),
+    month = month(Date, label = TRUE),
+    decade = case_when(
+      year < 1990 ~ "1980s",
+      year < 2000 ~ "1990s",
+      year < 2010 ~ "2000s",
+      year < 2020 ~ "2010s",
+      TRUE ~ "2020s"
+    ) %>% factor(levels = c("1980s","1990s","2000s","2010s","2020s")),
+    
+# Calculate the statistics 
+    abs_revision = abs(revision),
+    rev_pct_final = revision / final * 100,
+    abs_rev_pct_final = abs(revision) / final * 100,
+    rev_pct_total = revision / employment * 100,
+    abs_rev_pct_total = abs(revision) / employment * 100
+  ) %>%
+  arrange(Date)
+
+
+# This line fixes the CRAN mirror error forever in Quarto
+options(repos = "https://cran.r-project.org")
+
+# Install knitr (and kableExtra if you want pretty tables) — only runs once
+if (!require("knitr")) install.packages("knitr")
+if (!require("kableExtra")) install.packages("kableExtra")
+
+# Load them
+library(knitr)
+library(kableExtra)
+
+#summarize the statistics
+df %>%
+  summarise(
+    Statistic = c("Period",
+                  "Total months",
+                  "Mean revision (k)",
+                  "Mean |revision| (k)",
+                  "Largest upward",
+                  "Largest downward",
+                  "Avg |rev| / total emp (%)",
+                  "% upward revisions"),
+    Value = c("1979 – July 2025",
+              n(),
+              round(mean(revision)),
+              round(mean(abs_revision)),
+              paste0("+", max(revision), "k"),
+              paste0(min(revision), "k"),
+              round(mean(abs_rev_pct_total), 3),
+              round(mean(revision > 0)*100, 1))
+  ) %>%
+  kable(caption = "CES Revisions: Key Statistics (1979–2025)")
+
+```
+```{r}
+### 1. Time series of revisions
+ggplot(df, aes(x = Date, y = revision)) +
+  geom_line(color = "gray60") +
+  geom_point(data = ~filter(., abs_revision > 300), color = "red", size = 2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = "CES Revisions (Final − Preliminary), 1979–2025",
+       subtitle = "Red = revisions > ±300k jobs",
+       y = "Revision (thousands)", x = "") +
+  theme_minimal()
+
+# Plot 2 – Accuracy trend (% of total employment)
+ggplot(df, aes(Date, abs_rev_pct_total)) +
+  geom_line(color = "steelblue", alpha = 0.7) +
+  geom_smooth(method = "loess", span = 0.3, color = "red", se = FALSE) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  labs(title = "Revision Size as % of Total Nonfarm Employment",
+       subtitle = "Huge improvement since the 1990s",
+       x = "", y = "|Revision| / Total Employment (%)") +
+  theme_minimal()
+
+# 3. Upward revision bias by year
+# 
+percent <- function(x, digits = 1) {
+  paste0(round(x * 100, digits), "%")
+}
+df %>%
+  group_by(year) %>%
+  summarise(pct_up = mean(revision > 0)) %>%
+  ggplot(aes(x = year, y = pct_up)) +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_line(color = "darkgreen") +
+  scale_y_continuous(labels = percent) +
+  labs(title = "Bias in Preliminary Reports",
+       subtitle = ">50% = systematic overestimation",
+       y = "% of months revised upward") +
+  theme_minimal()
+
+# 4. Seasonal pattern
+df %>%
+  group_by(month) %>%
+  summarise(mean_abs = mean(abs_revision)) %>%
+  ggplot(aes(x = month, y = mean_abs)) +
+  geom_col(fill = "skyblue", alpha = 0.8) +
+  labs(title = "Seasonal Revision Pattern",
+       subtitle = "March–May = largest revisions (benchmark season)",
+       y = "Mean |Revision| (thousands)", x = "") +
+  theme_minimal()
+```
+
+
+
+# Task 4: Statistical Inference
+
+1. Has the fraction of negative revisions increased post-2000?
+
+To test if the fraction of negative revisions has increased post-2000, below perform a two-sample binomial proportion test using the prop_test() function with a one-sided alternative hypothesis.
+
+This test compares the proportion of negative revisions in the period after 2000 to the proportion in the period before 2000.
+
+```{r}
+if (!require("infer")) install.packages("infer")
+library(infer)
+```
+```{r}
+ces_revisions_test <- df |>
+  # 1. Create the response variable (Categorical: TRUE if the revision is negative)
+  mutate(is_negative = revision < 0,
+         # 2. Create the explanatory/grouping variable (Categorical)
+         is_post_2000 = year >= 2000) |>
+  # Ensure complete cases for the test variables
+  drop_na(is_negative, is_post_2000)
+
+# Perform the one-sided Binomial Proportion Test
+revision_prop_test <- ces_revisions_test |>
+  prop_test(is_negative ~ is_post_2000,
+            # Specify the one-sided alternative: TRUE > FALSE
+            alternative = "greater",
+            # Set the order to compare Post-2000 (TRUE) vs. Pre-2000 (FALSE)
+            order = c("TRUE", "FALSE"))
+
+revision_prop_test
+```
+**Hypotheses (One-Sided)**
+
+The test is testing if the proportion of negative revisions in the later group (Post-2000) is greater than the proportion in the earlier group (Pre-2000).
+
+* Null Hypothesis: The proportion of negative revisions is the same or smaller post-2000 than pre-2000.
+* Alternative Hypothesis: The proportion of negative revisions has increased post-2000.
+
+**Interpretation**
+The P-value is `{r} revision_prop_test$p_value`, which is larger than 0.05, fail to reject the null hypothesis.
+
+**Conclusion**
+The data does not support the claim that the fraction of negative revisions has significantly increased post-2000.
+
+
+2. Has the fraction of revisions of more than 1% increased post-2020?
+
+Below is a two-sample binomial proportion test to test if the fraction has increased.
+
+```{r}
+ces_revisions_test <- df |>
+  # 1. Create the response variable (Categorical: TRUE if magnitude > 1%)
+  mutate(is_large_revision = abs(revision) > 1,
+         # 2. Create the explanatory/grouping variable (Categorical)
+         is_post_2020 = year >= 2020) |>
+  # Ensure complete cases for the test variables
+  drop_na(is_large_revision, is_post_2020)
+
+# Perform the one-sided Binomial Proportion Test
+revision_prop_test <- ces_revisions_test |>
+  prop_test(is_large_revision ~ is_post_2020,
+            # Specify the alternative hypothesis: Post-2020 (TRUE) > Pre-2020 (FALSE)
+            alternative = "greater",
+            order = c("TRUE", "FALSE"))
+
+revision_prop_test
+```            
+
+**Two-Sample Binomial Proportion Test Hypotheses (One-Sided)**
+
+* Null Hypothesis: The proportion of large revisions is the same or smaller post-2020 than pre-2020.
+
+* Alternative Hypothesis: The proportion of large revisions (those with magnitude of |revision| > 1) has increased post-2020.
+
+**Interpretation:**
+The P-value is `{r} revision_prop_test$p_value`, which is larger than 0.05, fail to reject null hypothesis
+
+**Conclusion:**
+The observed increase is not statistically significant.
+
+
+3. Is the average revision significantly different from zero?
+
+Below is a one-sample t-test to determine if the average revision is significantly different from zero.
+
+```{r}
+ces_revisions_clean <- df |>
+  drop_na(revision) 
+
+# Perform the one-sample t-test comparing the mean of 'revision' to 0
+revision_t_test <- ces_revisions_clean |>
+  t_test(response = revision, 
+         mu = 0) # mu = 0 sets the null mean for the test
+
+revision_t_test
+```
+
+**Hypotheses**
+
+* Null Hypothesis: The true average revision ($\mu$) is equal to zero.
+
+* Alternative Hypothesis: The true average revision ($\mu$) is significantly different from zero (it's either positive or negative)
+
+**Interpretation:**
+
+The P-value is `{r} revision_t_test$p_value`, which is smaller than 0.05, reject null hypothesis.
+
+**Conclusion:**
+
+The average revision is statistically significantly different from zero. 
+
+
+
+4. Has the average revision increased post-2020?
+
+Below is a two-sample t-test to determine if the average revision has increased post-2020. This test compares the mean of the revisions made in the period after 2020 to the mean of the revisions made before 2020.
+
+```{r}
+ces_revisions_test <- df |>
+  # 1. Create the explanatory/grouping variable (Categorical)
+  mutate(is_post_2020 = year >= 2020) |>
+  # Ensure complete cases for the test
+  drop_na(revision) 
+
+# Perform the one-sided t-test
+revision_t_test <- ces_revisions_test |>
+  t_test(revision ~ is_post_2020,
+         # Specify the one-sided alternative
+         alternative = "greater",
+         # Set the order so TRUE (Post-2020) is compared to FALSE (Pre-2020)
+         order = c("TRUE", "FALSE"))
+
+revision_t_test
+```
+
+**Interpretation:**
+The p-value is `{r} revision_t_test$p_value`, which is greater than 0.05, fail to reject the null hypothesis.
+
+**Conclusion:** 
+The data does not support the claim that the average revision has significantly increased post-2020.
+
+
+5. Are revisions larger when the underlying change in CES level is larger?
+
+
+Correlation analysis is used to assess if revisions are larger when the underlying change in the CES level is larger. 
+
+In this case, the two variables are:
+
+a. Revision Magnitude: The absolute size of the revision
+
+b. CES Change Magnitude: The absolute size of the underlying change in the preliminary CES employment level.
+
+```{r}
+ces_revisions_magnitudes <- df |>
+  # Ensure data is ordered by Date
+  arrange(Date) |>
+  
+  # Calculate the actual month-over-month change in the CES level
+  mutate(
+    ces_change = employment - lag(employment)
+  ) |>
+  
+  # 2. Calculate the absolute magnitudes for both variables
+  mutate(
+    # The magnitude (absolute value) of the revision
+    revision_abs = abs(revision),
+    # The magnitude (absolute value) of the underlying CES change
+    ces_change_abs = abs(ces_change)
+  ) |>
+  
+  # Remove NA values that result from the lag function and any existing missing data
+  drop_na(revision_abs, ces_change_abs)
+
+# 3. Perform the Pearson correlation test (base R)
+correlation_test <- cor.test(
+  x = ces_revisions_magnitudes$revision_abs,
+  y = ces_revisions_magnitudes$ces_change_abs,
+  method = "pearson" # Tests for a linear relationship
+)
+
+# Print the result to get the correlation coefficient and p-value
+correlation_test
+```
+
+
+**Interpretation**
+P-value < 0.05, reject the null hypothesis that the true correlation is equal to zero.r~-0.19 indicate the relationship is weak
+
+**Conclusion**
+There is strong statistical evidence that a linear correlation exists between the magnitude of the underlying CES change and the magnitude of the revision.
+The two variables tend to increase together, but the relationship is not strong or highly predictive.

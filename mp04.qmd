@@ -3,7 +3,10 @@ title: "Mini-Project#04"
 author: "Wing Chan"
 ---
 
-```{r}
+```{r setup, include=FALSE}
+#| code-fold: true
+#| code-summary: "Show code:"
+
 # install packages if needed
 if (!requireNamespace("httr2", quietly = TRUE)) install.packages("httr2")
 if (!requireNamespace("rvest", quietly = TRUE)) install.packages("rvest")
@@ -22,11 +25,31 @@ library(tidyverse)
 
 ```
 
+# Just the Fact(-Check)s, Ma’am!
+
+This mini-project examines U.S. seasonally-adjusted total non-farm payroll employment from the Bureau of Labor Statistics (BLS) Current Employment Statistics (CES) survey—the headline "jobs added" figure central to political discourse. 
+
+Data sources include: 
+
+(1) Final CES Estimates
+
+(2) CES Revisions
+
+
+The goal is to fact-check claims about CES revisions and the August 2025 firing of BLS Commissioner Erika McEntarfer by two politicians/commentators, rated via PolitiFact's scale ("True" to "Pants on Fire"). Each fact-check incorporates ≥3 EDA statistics, ≥2 visualizations, and 1 hypothesis test.
+
+
 # Data Acquisition
 ## Task 1: Download CES Total Nonfarm Payroll
 
+(1) Final CES Estimates
+
+First, we build the POST request, then parse HTML and find the table of interest. Collect the data, and transform the acquired data. Check the data structure as follow:
 
 ```{r}
+#| code-fold: true
+
+
 # ---- Step 1: Build the POST request ----
 req <- request("https://data.bls.gov/pdq/SurveyOutputServlet") |>
   req_method("POST") |>
@@ -49,8 +72,8 @@ html <- resp |> resp_body_html()
 tbl <- html |> html_element("#table0") |> html_table()
 
 # ---- Inspect structure ----
-head(tbl) #check top records
-tail(tbl) #check last records 
+#head(tbl) #check top records
+#tail(tbl) #check last records 
 
 # ---- transform the data ----
 nonfarm_employment_data <- tbl |> 
@@ -70,12 +93,15 @@ nonfarm_employment_data <- tbl |>
 
 # ---- inspect transformed data ----
 nonfarm_employment_data
-tail(nonfarm_employment_data) #dropped the (P : preliminary)
+#tail(nonfarm_employment_data) #dropped the (P : preliminary)
 ```
 
-#CES Revisions - Task 2: Download CES Revisions Tables
-```{r}
+## Task 2: Download CES Revisions Tables
 
+(2) CES Revisions 
+First, we request to the page, parse the table of interest, transform the data. Examine the data as follow: 
+```{r}
+#| code-fold: true
 
 fx_ces_rev <- function(year)
 {
@@ -128,8 +154,13 @@ all_revisions %>%
   mutate(which_na = apply(is.na(.), 1, which))
 ```
 
+## Task 3: Data Exploration and Visualization
+
+**Data Exploration** 
+
 By joining the two tables, then compute 6 statistics about CES over the past 45 years
 ```{r}
+#| code-fold: true
 #Joining the two tables
 df <- nonfarm_employment_data %>%
   left_join(all_revisions, join_by("date" == "Date"))
@@ -193,7 +224,15 @@ df %>%
   kable(caption = "CES Revisions: Key Statistics (1979–2025)")
 
 ```
+
+
+---
+
+**Visualization**
+
+1.  Time series of revisions
 ```{r}
+#| code-fold: true
 ### 1. Time series of revisions
 ggplot(df, aes(x = Date, y = revision)) +
   geom_line(color = "gray60") +
@@ -203,7 +242,10 @@ ggplot(df, aes(x = Date, y = revision)) +
        subtitle = "Red = revisions > ±300k jobs",
        y = "Revision (thousands)", x = "") +
   theme_minimal()
-
+```
+2. Accuracy trend (% of total employment)
+```{r}
+#| code-fold: true
 # Plot 2 – Accuracy trend (% of total employment)
 ggplot(df, aes(Date, abs_rev_pct_total)) +
   geom_line(color = "steelblue", alpha = 0.7) +
@@ -213,7 +255,11 @@ ggplot(df, aes(Date, abs_rev_pct_total)) +
        subtitle = "Huge improvement since the 1990s",
        x = "", y = "|Revision| / Total Employment (%)") +
   theme_minimal()
+```
 
+3. Upward revision bias by year
+```{r}
+#| code-fold: true
 # 3. Upward revision bias by year
 # 
 percent <- function(x, digits = 1) {
@@ -230,7 +276,11 @@ df %>%
        subtitle = ">50% = systematic overestimation",
        y = "% of months revised upward") +
   theme_minimal()
+```
 
+4. Seasonal pattern
+```{r}
+#| code-fold: true
 # 4. Seasonal pattern
 df %>%
   group_by(month) %>%
@@ -254,10 +304,14 @@ To test if the fraction of negative revisions has increased post-2000, below per
 This test compares the proportion of negative revisions in the period after 2000 to the proportion in the period before 2000.
 
 ```{r}
+#| code-fold: true
+
 if (!require("infer")) install.packages("infer")
 library(infer)
 ```
 ```{r}
+#| code-fold: true
+
 ces_revisions_test <- df |>
   # 1. Create the response variable (Categorical: TRUE if the revision is negative)
   mutate(is_negative = revision < 0,
@@ -283,18 +337,22 @@ The test is testing if the proportion of negative revisions in the later group (
 * Null Hypothesis: The proportion of negative revisions is the same or smaller post-2000 than pre-2000.
 * Alternative Hypothesis: The proportion of negative revisions has increased post-2000.
 
-**Interpretation**
+**Interpretation:**
+
 The P-value is `{r} revision_prop_test$p_value`, which is larger than 0.05, fail to reject the null hypothesis.
 
-**Conclusion**
+**Conclusion:**
+
 The data does not support the claim that the fraction of negative revisions has significantly increased post-2000.
 
+---
 
 2. Has the fraction of revisions of more than 1% increased post-2020?
 
 Below is a two-sample binomial proportion test to test if the fraction has increased.
 
 ```{r}
+#| code-fold: true
 ces_revisions_test <- df |>
   # 1. Create the response variable (Categorical: TRUE if magnitude > 1%)
   mutate(is_large_revision = abs(revision) > 1,
@@ -325,12 +383,14 @@ The P-value is `{r} revision_prop_test$p_value`, which is larger than 0.05, fail
 **Conclusion:**
 The observed increase is not statistically significant.
 
+---
 
 3. Is the average revision significantly different from zero?
 
 Below is a one-sample t-test to determine if the average revision is significantly different from zero.
 
 ```{r}
+#| code-fold: true
 ces_revisions_clean <- df |>
   drop_na(revision) 
 
@@ -338,9 +398,8 @@ ces_revisions_clean <- df |>
 revision_t_test <- ces_revisions_clean |>
   t_test(response = revision, 
          mu = 0) # mu = 0 sets the null mean for the test
-
-revision_t_test
 ```
+Result: `{r} revision_t_test`
 
 **Hypotheses**
 
@@ -356,13 +415,14 @@ The P-value is `{r} revision_t_test$p_value`, which is smaller than 0.05, reject
 
 The average revision is statistically significantly different from zero. 
 
-
+---
 
 4. Has the average revision increased post-2020?
 
 Below is a two-sample t-test to determine if the average revision has increased post-2020. This test compares the mean of the revisions made in the period after 2020 to the mean of the revisions made before 2020.
 
 ```{r}
+#| code-fold: true
 ces_revisions_test <- df |>
   # 1. Create the explanatory/grouping variable (Categorical)
   mutate(is_post_2020 = year >= 2020) |>
@@ -399,6 +459,7 @@ a. Revision Magnitude: The absolute size of the revision
 b. CES Change Magnitude: The absolute size of the underlying change in the preliminary CES employment level.
 
 ```{r}
+#| code-fold: true
 ces_revisions_magnitudes <- df |>
   # Ensure data is ordered by Date
   arrange(Date) |>

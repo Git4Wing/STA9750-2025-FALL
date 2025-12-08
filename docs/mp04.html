@@ -134,7 +134,7 @@ window.Quarto = {
 
 </head>
 
-<body class="nav-fixed fullcontent">
+<body class="floating nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -153,8 +153,28 @@ window.Quarto = {
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#task-1-download-ces-total-nonfarm-payroll" id="toc-task-1-download-ces-total-nonfarm-payroll" class="nav-link active" data-scroll-target="#task-1-download-ces-total-nonfarm-payroll">Task 1: Download CES Total Nonfarm Payroll</a></li>
+  <li><a href="#task-2-download-ces-revisions-tables" id="toc-task-2-download-ces-revisions-tables" class="nav-link" data-scroll-target="#task-2-download-ces-revisions-tables">Task 2: Download CES Revisions Tables</a>
+  <ul class="collapse">
+  <li><a href="#task-3-data-exploration-and-visualization" id="toc-task-3-data-exploration-and-visualization" class="nav-link" data-scroll-target="#task-3-data-exploration-and-visualization">Task 3: Data Exploration and Visualization</a></li>
+  </ul></li>
+  <li><a href="#task-4-statistical-inference" id="toc-task-4-statistical-inference" class="nav-link" data-scroll-target="#task-4-statistical-inference">Task 4: Statistical Inference</a>
+  <ul class="collapse">
+  <li><a href="#fact-check-bls-revisions" id="toc-fact-check-bls-revisions" class="nav-link" data-scroll-target="#fact-check-bls-revisions">Fact Check BLS Revisions</a></li>
+  </ul></li>
+  <li><a href="#task-5-fact-checks-of-claims-about-bls" id="toc-task-5-fact-checks-of-claims-about-bls" class="nav-link" data-scroll-target="#task-5-fact-checks-of-claims-about-bls">Task 5: Fact Checks of Claims about BLS</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -183,8 +203,7 @@ window.Quarto = {
 </header>
 
 
-<section id="just-the-fact-checks-maam" class="level1">
-<h1>Just the Fact(-Check)s, Ma’am!</h1>
+<p><strong>Just the Fact(-Check)s, Ma’am!</strong></p>
 <p>This mini-project examines U.S. seasonally-adjusted total non-farm payroll employment from the Bureau of Labor Statistics (BLS) Current Employment Statistics (CES) survey—the headline “jobs added” figure central to political discourse.</p>
 <p>Data sources include:</p>
 <ol type="1">
@@ -192,11 +211,9 @@ window.Quarto = {
 <li><p>CES Revisions</p></li>
 </ol>
 <p>The goal is to fact-check claims about CES revisions and the August 2025 firing of BLS Commissioner Erika McEntarfer by two politicians/commentators, rated via PolitiFact’s scale (“True” to “Pants on Fire”). Each fact-check incorporates ≥3 EDA statistics, ≥2 visualizations, and 1 hypothesis test.</p>
-</section>
-<section id="data-acquisition" class="level1">
-<h1>Data Acquisition</h1>
-<section id="task-1-download-ces-total-nonfarm-payroll" class="level2">
-<h2 class="anchored" data-anchor-id="task-1-download-ces-total-nonfarm-payroll">Task 1: Download CES Total Nonfarm Payroll</h2>
+<p><strong>Data Acquisition</strong></p>
+<section id="task-1-download-ces-total-nonfarm-payroll" class="level1">
+<h1>Task 1: Download CES Total Nonfarm Payroll</h1>
 <ol type="1">
 <li>Final CES Estimates</li>
 </ol>
@@ -280,8 +297,8 @@ Caused by warning:
 </details>
 </div>
 </section>
-<section id="task-2-download-ces-revisions-tables" class="level2">
-<h2 class="anchored" data-anchor-id="task-2-download-ces-revisions-tables">Task 2: Download CES Revisions Tables</h2>
+<section id="task-2-download-ces-revisions-tables" class="level1">
+<h1>Task 2: Download CES Revisions Tables</h1>
 <ol start="2" type="1">
 <li>CES Revisions First, we request to the page, parse the table of interest, transform the data. Examine the data as follow:</li>
 </ol>
@@ -358,7 +375,7 @@ Caused by warning:
 7 2025-12-01       NA    NA       NA &lt;int [3]&gt;</code></pre>
 </div>
 </div>
-</section>
+<hr>
 <section id="task-3-data-exploration-and-visualization" class="level2">
 <h2 class="anchored" data-anchor-id="task-3-data-exploration-and-visualization">Task 3: Data Exploration and Visualization</h2>
 <p><strong>Data Exploration</strong></p>
@@ -732,7 +749,7 @@ conf.level = conf_level, : Chi-squared approximation may be incorrect</code></pr
 <span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">mu =</span> <span class="dv">0</span>) <span class="co"># mu = 0 sets the null mean for the test</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<p>Result: 3.1839344, 556, 0.0015342, two.sided, 11.2369838, 4.304639, 18.1693287</p>
+<p>Result: <code>{r} revision_t_test</code></p>
 <p><strong>Hypotheses</strong></p>
 <ul>
 <li><p>Null Hypothesis: The true average revision (<span class="math inline">\(\mu\)</span>) is equal to zero.</p></li>
@@ -833,9 +850,9 @@ sample estimates:
 </div>
 <p><strong>Interpretation</strong> P-value &lt; 0.05, reject the null hypothesis that the true correlation is equal to zero.r~-0.19 indicate the relationship is weak</p>
 <p><strong>Conclusion</strong> There is strong statistical evidence that a linear correlation exists between the magnitude of the underlying CES change and the magnitude of the revision. The two variables tend to increase together, but the relationship is not strong or highly predictive.</p>
+<section id="fact-check-bls-revisions" class="level2">
+<h2 class="anchored" data-anchor-id="fact-check-bls-revisions">Fact Check BLS Revisions</h2>
 </section>
-<section id="fact-check-bls-revisions" class="level1">
-<h1>Fact Check BLS Revisions</h1>
 </section>
 <section id="task-5-fact-checks-of-claims-about-bls" class="level1">
 <h1>Task 5: Fact Checks of Claims about BLS</h1>
@@ -855,9 +872,23 @@ sample estimates:
 </ol></li>
 <li><p>Visual evidence:</p>
 <ol type="1">
-<li><p>Time series of revisions (1979–2025) — shows a few very large revisions but also long stretches of small revisions; large downward benchmark revisions are visible among other big events.</p></li>
-<li><p>Bias by year / % months revised upward plot (Task 3 plot 3) — shows yearly fraction revised upward; does not show a clear, consistent, increasing partisan skew across decades.</p></li>
-</ol></li>
+<li>Time series of revisions (1979–2025) — shows a few very large revisions but also long stretches of small revisions; large downward benchmark revisions are visible among other big events.</li>
+</ol>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img"></p>
+<figcaption>Time series of revisions (1979–2025)</figcaption>
+</figure>
+</div>
+<ol start="2" type="1">
+<li>Bias by year / % months revised upward plot — shows yearly fraction revised upward; does not show a clear, consistent, increasing partisan skew across decades.</li>
+</ol>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img"></p>
+<figcaption>Upward revision bias by year</figcaption>
+</figure>
+</div></li>
 <li><p>Hypothesis tests</p>
 <ol type="1">
 <li><p>Has the fraction of negative revisions increased post-2000? prop test p = 0.1865 (fail to reject). No statistically significant increase in negative revisions post-2000.</p></li>
@@ -882,10 +913,24 @@ sample estimates:
 </ol></li>
 <li><p>Visual evidence:</p>
 <ol type="1">
-<li><p>Time series of revisions (1979–2025) — shows that most monthly revisions cluster around ±100k or less, with occasional large spikes (positive or negative).</p></li>
-<li><p>Revision as % of total nonfarm employment - shows that revision magnitudes, relative to the size of the labor force, have trended downward over time — meaning that even large revisions are a small fraction of total employment</p></li>
+<li>Time series of revisions (1979–2025) — shows that most monthly revisions cluster around ±100k or less, with occasional large spikes (positive or negative).</li>
 </ol></li>
 </ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img"></p>
+<figcaption>Time series of revisions (1979–2025)</figcaption>
+</figure>
+</div>
+<ol start="2" type="1">
+<li>Revision as % of total nonfarm employment - shows that revision magnitudes, relative to the size of the labor force, have trended downward over time — meaning that even large revisions are a small fraction of total employment</li>
+</ol>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img"></p>
+<figcaption>Accuracy trend (% of total employment)</figcaption>
+</figure>
+</div>
 <p>These visuals illustrate that while revisions are a normal and expected feature of monthly employment data, extreme revisions are rare outliers — not the norm.</p>
 <ul>
 <li><p>Hypothesis tests</p>

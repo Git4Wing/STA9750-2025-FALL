@@ -25,7 +25,7 @@ library(tidyverse)
 
 ```
 
-# Just the Fact(-Check)s, Ma’am!
+**Just the Fact(-Check)s, Ma’am!**
 
 This mini-project examines U.S. seasonally-adjusted total non-farm payroll employment from the Bureau of Labor Statistics (BLS) Current Employment Statistics (CES) survey—the headline "jobs added" figure central to political discourse. 
 
@@ -39,8 +39,9 @@ Data sources include:
 The goal is to fact-check claims about CES revisions and the August 2025 firing of BLS Commissioner Erika McEntarfer by two politicians/commentators, rated via PolitiFact's scale ("True" to "Pants on Fire"). Each fact-check incorporates ≥3 EDA statistics, ≥2 visualizations, and 1 hypothesis test.
 
 
-# Data Acquisition
-## Task 1: Download CES Total Nonfarm Payroll
+**Data Acquisition**
+
+# Task 1: Download CES Total Nonfarm Payroll
 
 (1) Final CES Estimates
 
@@ -96,7 +97,7 @@ nonfarm_employment_data
 #tail(nonfarm_employment_data) #dropped the (P : preliminary)
 ```
 
-## Task 2: Download CES Revisions Tables
+# Task 2: Download CES Revisions Tables
 
 (2) CES Revisions 
 First, we request to the page, parse the table of interest, transform the data. Examine the data as follow: 
@@ -154,11 +155,15 @@ all_revisions %>%
   mutate(which_na = apply(is.na(.), 1, which))
 ```
 
+
+---
+
 ## Task 3: Data Exploration and Visualization
 
 **Data Exploration** 
 
 By joining the two tables, then compute 6 statistics about CES over the past 45 years
+
 ```{r}
 #| code-fold: true
 #Joining the two tables
@@ -399,7 +404,7 @@ revision_t_test <- ces_revisions_clean |>
   t_test(response = revision, 
          mu = 0) # mu = 0 sets the null mean for the test
 ```
-Result: `{r} revision_t_test`
+Result: ```{r} revision_t_test```
 
 **Hypotheses**
 
@@ -499,7 +504,7 @@ There is strong statistical evidence that a linear correlation exists between th
 The two variables tend to increase together, but the relationship is not strong or highly predictive.
 
 
-# Fact Check BLS Revisions
+## Fact Check BLS Revisions
 
 # Task 5: Fact Checks of Claims about BLS
 
@@ -532,7 +537,11 @@ Hassett highlighted the 818k annual revision and argued that the timing (the ann
 
   1. Time series of revisions (1979–2025) — shows a few very large revisions but also long stretches of small revisions; large downward benchmark revisions are visible among other big events.
 
-  2. Bias by year / % months revised upward plot (Task 3 plot 3) — shows yearly fraction revised upward; does not show a clear, consistent, increasing partisan skew across decades. 
+  ![Time series of revisions (1979–2025)](https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-4-1.png)
+
+  2. Bias by year / % months revised upward plot  — shows yearly fraction revised upward; does not show a clear, consistent, increasing partisan skew across decades. 
+  
+  ![Upward revision bias by year](https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-6-1.png)
 
 
 * Hypothesis tests 
@@ -576,8 +585,11 @@ Tillis implies the sole reason for Dr. McEntarfer's firing was the release of po
 
   1. Time series of revisions (1979–2025) — shows that most monthly revisions cluster around ±100k or less, with occasional large spikes (positive or negative).
   
-
+ ![Time series of revisions (1979–2025)](https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-4-1.png)
+ 
   2. Revision as % of total nonfarm employment - shows that revision magnitudes, relative to the size of the labor force, have trended downward over time — meaning that even large revisions are a small fraction of total employment
+
+![Accuracy trend (% of total employment)](https://git4wing.github.io/STA9750-2025-FALL/mp04_files/figure-html/unnamed-chunk-5-1.png)
 
 
 These visuals illustrate that while revisions are a normal and expected feature of monthly employment data, extreme revisions are rare outliers — not the norm.

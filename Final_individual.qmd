@@ -1090,4 +1090,14 @@ ggplotly(p, tooltip = "text")
 - The difference indicates that the public was reacting more strongly to the new spatial concentration of potential rat habitats and food sources on the street (outdoor dining) than to the historical pattern of documented violations inside buildings.
 
 
-## Conclusion 
+## Conclusion: Rodent Activity, Public Perception, and the Open Restaurants Program
+
+This analysis integrated three disparate datasets (Open Restaurant Applications, 311 Rodent Complaints, and DOHMH Inspections) using Neighborhood (NTA) to determine the spatial and statistical relationship between expanded outdoor dining and rodent issues in New York City. The study design focused on leveraging normalized density metrics to ensure the analysis was robust and fair across NTAs of varying sizes, thereby overcoming a major challenge in city-wide spatial analysis where raw counts can simply reflect population or size.
+
+#### Integrated Findings and Statistical Interpretation
+Spatially, the analysis confirmed a concentration of both the supply of outdoor seating and publicly reported rodent activity in dense, mixed-use areas of Manhattan (e.g., Harlem, Upper West Side, and East Village). The core statistical objective was to quantify the environmental impact of the Open Restaurants Program:The correlation between Rodent Complaint Density and Official Inspection Violation Density was weak `{r} correlation`. This indicates that public perception (311 calls) is only weakly tied to verifiable internal restaurant sanitation failures.The correlation between Rodent Complaint Density and Outdoor Seating Density was marginally higher, yet still weak `{r} outdoor_correlation`.
+
+#### Policy Implications and External Factors 
+This marginal difference in correlation is highly instructive for policy development. It implies that the public's decision to file a 311 complaint was slightly more aligned with the spatial concentration of visible external dining structures than with the official regulatory findings of internal restaurant hygiene.
+
+This finding suggests that the expanded use of public space for dining contributed to a heightened perception of rodent activity, likely driven by external factors such as improper waste storage or structure-related harborage in dense outdoor dining zones. For the permanent "Dining Out NYC" initiative, this highlights that rodent mitigation efforts cannot solely focus on traditional health inspections but must prioritize the rigorous and consistent management of the visible, street-level infrastructure and waste disposal associated with outdoor dining setups.

@@ -680,7 +680,6 @@ top_rat311_density |>
 
 - Conversely, the highest density of 311 public complaints is focused in Upper Manhattan (Harlem) and surrounding boroughs, suggesting that the public perceives the rodent problem as more concentrated in these residential and mixed-use areas.
 
-[[LET SEE IF I HAVE TIME, CAN DRAW A GEO MAP with Density of Complaints for ease of comparison]]
 
 ### Potential influence of outdoor dining on rodent complaints
 
